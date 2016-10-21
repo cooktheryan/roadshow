@@ -1,0 +1,16 @@
+---
+- name: Create RoadShow Infrastructure
+  cloudformation:
+    stack_name: "Roadshow-Infra"
+    state: "present"
+    region: "{{ region }}"
+    template: "roles/cloudformation-infra/files/roadshow.json"
+    template_parameters:
+      Region: "{{ region }}"
+      Route53HostedZone: "{{ public_hosted_zone }}."
+      PublicHostedZone: "{{ public_hosted_zone }}"
+      PublicHostname: "{{ openshift_master_cluster_public_hostname }}"
+      AppWildcardDomain: "*.apps.{{ public_hosted_zone }}"
+      KeyName: "{{ keypair }}"
+      MasterUserData: "{{ lookup('file', 'user_data_master.yml') | b64encode }}" 
+      NodeUserData: "{{ lookup('file', 'user_data_node.yml') | b64encode }}"
