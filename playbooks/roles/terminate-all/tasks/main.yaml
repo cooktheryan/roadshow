@@ -1,18 +1,4 @@
 ---
-- name: Remove policy used for user
-  iam_policy:
-    iam_name: "{{ s3_username }}"
-    iam_type: user
-    policy_name: S3FullAccess
-    state: absent
-    region: "{{ region }}"
-  ignore_errors: true
-- name: Remove S3 OpenShift registry user
-  iam:
-    iam_type: user
-    name: "{{ s3_username }}"
-    state: absent
-  ignore_errors: true
 - name: Remove Cloudformation
   cloudformation:
     stack_name: "Roadshow-Infra"

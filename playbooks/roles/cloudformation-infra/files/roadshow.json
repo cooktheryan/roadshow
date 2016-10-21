@@ -268,70 +268,6 @@
         "CidrIp": "0.0.0.0/0"
       }
     },
-    "MasterExtElb": {
-      "Type": "AWS::ElasticLoadBalancing::LoadBalancer",
-      "Properties": {
-        "CrossZone": "true",
-        "Tags": [ {"Key": "Name", "Value": "ose_master_elb"} ],
-        "HealthCheck": {
-          "HealthyThreshold" : "2",
-          "Interval" : "5",
-          "Target" : "TCP:443",
-          "Timeout" : "2",
-          "UnhealthyThreshold" : "2"
-        },
-        "Listeners":[
-          {
-            "InstancePort": { "Ref" : "MasterApiPort" },
-            "InstanceProtocol": "TCP",
-            "LoadBalancerPort": { "Ref" : "MasterApiPort" },
-            "Protocol": "TCP"
-          }
-        ],
-        "SecurityGroups": [{"Ref": "MasterSG"}],
-        "Subnets": [
-          {"Ref": "PublicSubnet"}
-            ],
-        "Instances": [
-          {"Ref": "Master"}
-            ]
-      }
-    },
-    "InfraElb": {
-      "Type": "AWS::ElasticLoadBalancing::LoadBalancer",
-      "Properties": {
-        "CrossZone": "true",
-        "Tags": [ {"Key": "Name", "Value": "ose_router_elb"} ],
-        "HealthCheck": {
-          "HealthyThreshold" : "2",
-          "Interval" : "5",
-          "Target" : "TCP:443",
-          "Timeout" : "2",
-          "UnhealthyThreshold" : "2"
-        },
-        "Listeners":[
-          {
-            "InstancePort": "443",
-            "InstanceProtocol": "TCP",
-            "LoadBalancerPort": "443",
-            "Protocol": "TCP"
-          },
-          {
-            "InstancePort": "80",
-            "InstanceProtocol": "TCP",
-            "LoadBalancerPort": "80",
-            "Protocol": "TCP"
-          }
-        ],
-        "SecurityGroups": [ { "Ref": "NodeSG" } ],
-        "Subnets": [
-          {"Ref": "PublicSubnet"}
-        	],
-        "Instances": [
-          {"Ref": "InfraNode"}
-            ]
-      }
-    },
     "NodePolicy": {
       "Type": "AWS::IAM::Role",
       "Properties": {
@@ -416,9 +352,8 @@
     "Route53Records": {
       "Type": "AWS::Route53::RecordSetGroup",
       "DependsOn": [
-        "InfraElb",
         "Master",
-        "MasterExtElb"
+        "InfraNode"
       ],
       "Properties": {
         "HostedZoneName": { "Ref": "Route53HostedZone" },
@@ -426,19 +361,15 @@
           {
             "Name":  { "Ref": "PublicHostname" },
             "Type": "A",
-            "AliasTarget": {
-                "HostedZoneId": { "Fn::GetAtt" : ["MasterExtElb", "CanonicalHostedZoneNameID"] },
-                "DNSName": { "Fn::GetAtt" : ["MasterExtElb","CanonicalHostedZoneName"] }
-            }
+            "TTL": "300",
+            "ResourceRecords": [{ "Fn::GetAtt" : ["Master", "PublicIp"] }]
           },
           {
             "Name": { "Ref": "AppWildcardDomain" },
             "Type": "A",
-            "AliasTarget": {
-                "HostedZoneId": { "Fn::GetAtt" : ["InfraElb", "CanonicalHostedZoneNameID"] },
-                "DNSName": { "Fn::GetAtt" : ["InfraElb","CanonicalHostedZoneName"] }
+            "TTL": "300",
+            "ResourceRecords": [{ "Fn::GetAtt" : ["InfraNode", "PublicIp"] }]
             }
-          }
         ]
       }
     },
@@ -449,8 +380,8 @@
           "ImageId" :  { "Fn::FindInMap" : [ "RegionMapping", { "Ref" : "AWS::Region" }, "AMI" ]},
           "UserData": {"Ref": "MasterUserData"},
           "KeyName" : {"Ref": "KeyName"},
-	      "InstanceType": {"Ref": "MasterInstanceType"},
-		  "SecurityGroupIds": [{ "Fn::GetAtt" : ["MasterSG", "GroupId"]}],
+	  "InstanceType": {"Ref": "MasterInstanceType"},
+	  "SecurityGroupIds": [{ "Fn::GetAtt" : ["MasterSG", "GroupId"]}],
           "SubnetId" : {"Ref": "PublicSubnet"},
           "IamInstanceProfile": { "Ref": "MasterInstanceProfile" },
           "Tags": [
@@ -493,7 +424,7 @@
           }
          ]
      }
-  },
+   },
     "InfraNode" : {
        "Type" : "AWS::EC2::Instance",
        "DependsOn": ["NodeInstanceProfile"],
