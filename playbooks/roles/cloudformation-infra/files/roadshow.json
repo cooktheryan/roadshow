@@ -557,10 +557,7 @@
         },
         "MaxSize": 6,
         "MinSize": 6,
-        "Tags": [
-          { "Key": "openshift-role",
-            "Value": "app"
-          },
+        "Tags": [ {"Key": "openshift-role", "Value": "app", "PropagateAtLaunch" : "true"} ],
         "VPCZoneIdentifier": [
           {
             "Ref": "PublicSubnet"
